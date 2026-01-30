@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Endless Runner</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+
+<body>
+  <div id="ui-layer">
+    <div id="score-container">
+      Score: <span id="score">0</span> | Coins: <span id="coins">0</span>
+    </div>
+    <div id="game-over-screen" class="hidden">
+      <h1>Game Over</h1>
+      <p>Score: <span id="final-score">0</span></p>
+      <button id="restart-btn">Restart</button>
+      <button id="ad-btn">Watch Ad to Continue</button>
+    </div>
+    <div id="ad-overlay" class="hidden">
+      <div class="ad-content">
+        <h2>Ad Playing...</h2>
+        <p>Please wait <span id="ad-timer">5</span>s</p>
+      </div>
+    </div>
+  </div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+
+</html>

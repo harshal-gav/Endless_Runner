@@ -1,0 +1,6 @@
+{
+    "appId": "com.endlessrunner.game",
+    "appName": "endless-runner",
+    "webDir": "dist",
+    "bundledWebRuntime": false
+}
