@@ -24,8 +24,6 @@ export class UIManager {
     async initializeAdMob() {
         try {
             await AdMob.initialize({
-                requestTrackingAuthorization: true,
-                testingDevices: ['YOUR_TEST_DEVICE_ID'], // Use 2077ef9a63d2b398840261c8221a0c9b for emulator testing if needed
                 initializeForTesting: true,
             });
             console.log('AdMob Initialized');
@@ -39,6 +37,18 @@ export class UIManager {
                 this.game.revive();
             });
 
+            AdMob.addListener(RewardAdPluginEvents.Loaded, (info) => {
+                console.log('Ad Loaded Success:', info);
+                // Optional: You could enable the button here
+                // alert('Ad Loaded and Ready!'); 
+            });
+
+            AdMob.addListener(RewardAdPluginEvents.FailedToLoad, (error) => {
+                console.error('Ad Failed to Load:', error);
+                // Alert the PREPARE error which is what we are missing
+                alert(`Ad Load Failed: ${error.message || 'Unknown'} (Code: ${error.code})`);
+            });
+
         } catch (e) {
             console.error('AdMob Init Failed', e);
         }
@@ -47,7 +57,7 @@ export class UIManager {
     async prepareRewardAd() {
         try {
             const options = {
-                adId: 'ca-app-pub-1126148240601289/6771614133', // Unit ID provided by user
+                adId: 'ca-app-pub-1126148240601289/6263814842', // Unit ID provided by user
                 // isTesting: true // Use true for testing with Test Ads, but user wants real ID integration logic
                 // Note: AdMob often fails to load real ads in debug builds or simulators.
             };
@@ -68,6 +78,11 @@ export class UIManager {
                 this.prepareRewardAd();
             } catch (e) {
                 console.error('AdMob Show Failed', e);
+                // Alert the real error to debug on device
+                const errMsg = e.message || 'Unknown Error';
+                const errCode = e.code !== undefined ? e.code : 'No Code';
+                alert(`AdMob Error: ${errMsg} | Code: ${errCode} | Raw: ${JSON.stringify(e)}`);
+
                 // Fallback to Mock if Ad fails (e.g. no internet/no fill)
                 this.playMockAd('Ad Failed to Load (Simulating)');
             }

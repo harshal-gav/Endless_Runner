@@ -13,3 +13,7 @@ android/build/
 
 # IDE
 .vscode/
+
+# Secrets
+*.jks
+*.keystore

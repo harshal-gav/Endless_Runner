@@ -42,9 +42,11 @@ export class SoundManager {
     }
 
     playCoin() {
-        // High ping
-        this.playTone(1200, 'sine', 0.1);
-        setTimeout(() => this.playTone(1600, 'sine', 0.1), 50);
+        // Richer coin sound (major triad arpeggio)
+        const now = this.audioCtx.currentTime;
+        this.playTone(1046.50, 'sine', 0.1); // C6
+        setTimeout(() => this.playTone(1318.51, 'sine', 0.1), 30); // E6
+        setTimeout(() => this.playTone(1567.98, 'sine', 0.2), 60); // G6
     }
 
     playCrash() {

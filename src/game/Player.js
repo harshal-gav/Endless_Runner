@@ -29,6 +29,13 @@ export class Player {
         this.isInvincible = false;
         this.invincibleTimer = 0;
 
+        // Powerup States
+        this.isJetpackActive = false;
+        this.jetpackTimer = 0;
+        this.isHoverboardActive = false;
+        this.hoverboardTimer = 0;
+        this.magnetActive = false;
+
         // Controls
         window.addEventListener('keydown', (e) => this.onKeyDown(e));
 
@@ -115,6 +122,8 @@ export class Player {
         this.isJumping = false;
         this.speed = 1.0;
         this.isInvincible = false;
+        this.isJetpackActive = false;
+        this.isHoverboardActive = false;
         this.mesh.material.color.setHex(0x00ff00);
         this.mesh.scale.set(1, 1, 1);
     }
@@ -144,9 +153,52 @@ export class Player {
         }
     }
 
+    activatePowerUp(type, duration) {
+        if (type === 'JETPACK') {
+            this.isJetpackActive = true;
+            this.jetpackTimer = duration;
+            this.verticalVelocity = 0;
+            this.isJumping = false;
+            // Visual
+            this.mesh.material.color.setHex(0x00ffff);
+        } else if (type === 'HOVERBOARD') {
+            this.isHoverboardActive = true;
+            this.hoverboardTimer = duration;
+            this.mesh.material.color.setHex(0xff00ff);
+        } else if (type === 'MAGNET') {
+            this.magnetActive = true;
+            setTimeout(() => this.magnetActive = false, duration * 1000);
+        }
+    }
+
     update(delta) {
         // Horizontal interpolation
         this.mesh.position.x += (this.targetX - this.mesh.position.x) * delta * 10;
+
+        // Jetpack Logic
+        if (this.isJetpackActive) {
+            this.jetpackTimer -= delta;
+            // Float high
+            this.mesh.position.y += (4.0 - this.mesh.position.y) * delta * 5;
+
+            if (this.jetpackTimer <= 0) {
+                this.isJetpackActive = false;
+                this.mesh.material.color.setHex(0x00ff00);
+                // Drop down
+                this.verticalVelocity = 0;
+                this.isJumping = true; // Transition to fall
+            }
+            return; // Skip normal gravity
+        }
+
+        // Hoverboard Timer
+        if (this.isHoverboardActive) {
+            this.hoverboardTimer -= delta;
+            if (this.hoverboardTimer <= 0) {
+                this.isHoverboardActive = false;
+                this.mesh.material.color.setHex(0x00ff00);
+            }
+        }
 
         // Vertical Movement (Gravity)
         if (this.isJumping) {
@@ -192,6 +244,9 @@ export class Player {
     checkCollision(obstacles) {
         if (this.isInvincible) return false;
 
+        // Jetpack avoids ground obstacles
+        if (this.isJetpackActive) return false;
+
         const playerBox = new THREE.Box3().setFromObject(this.mesh);
         // Shrink box slightly for forgiving gameplay
         playerBox.expandByScalar(-0.1);
@@ -199,6 +254,13 @@ export class Player {
         for (const obs of obstacles) {
             const obsBox = new THREE.Box3().setFromObject(obs);
             if (playerBox.intersectsBox(obsBox)) {
+                if (this.isHoverboardActive) {
+                    // Shield break
+                    this.isHoverboardActive = false;
+                    this.makeInvincible(2000); // Temporary invincibility after hit
+                    this.mesh.material.color.setHex(0x00ff00);
+                    return false; // Survived
+                }
                 return true;
             }
         }
@@ -206,12 +268,33 @@ export class Player {
     }
 
     checkCoinCollection(coins) {
-        const playerBox = new THREE.Box3().setFromObject(this.mesh);
-        playerBox.expandByScalar(0.2); // Magnet effect?
+        // Magnet effect in update loop usually, but here we check collection range
+        const range = this.magnetActive ? 5.0 : 0.2;
 
         for (let i = 0; i < coins.length; i++) {
+            // Simple distance check for magnet
+            if (this.magnetActive) {
+                if (this.mesh.position.distanceTo(coins[i].position) < range) {
+                    return i;
+                }
+            }
+
+            const playerBox = new THREE.Box3().setFromObject(this.mesh);
+            playerBox.expandByScalar(0.2);
             const coinBox = new THREE.Box3().setFromObject(coins[i]);
             if (playerBox.intersectsBox(coinBox)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    checkPowerUpCollection(powerups) {
+        const playerBox = new THREE.Box3().setFromObject(this.mesh);
+
+        for (let i = 0; i < powerups.length; i++) {
+            const pBox = new THREE.Box3().setFromObject(powerups[i]);
+            if (playerBox.intersectsBox(pBox)) {
                 return i;
             }
         }

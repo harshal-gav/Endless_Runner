@@ -11,20 +11,22 @@ export class Game {
     this.scene.fog = new THREE.Fog(0x87CEEB, 20, 100);
 
     this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    this.renderer = new THREE.WebGLRenderer({ antialias: true });
+    this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
 
     this.renderer.setSize(window.innerWidth, window.innerHeight);
-    this.renderer.shadowMap.enabled = true;
+    this.renderer.setSize(window.innerWidth, window.innerHeight);
+    this.renderer.shadowMap.enabled = false; // Performance: Disable Shadows
     document.body.appendChild(this.renderer.domElement);
 
     // Lighting
-    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 1);
+    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 1.2); // Increased intensity since no dir light shadow
     hemiLight.position.set(0, 20, 0);
     this.scene.add(hemiLight);
 
-    const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
     dirLight.position.set(3, 10, 10);
-    dirLight.castShadow = true;
+    dirLight.castShadow = false; // Performance: Disable Shadow Casting
     this.scene.add(dirLight);
 
     // Game Objects
@@ -78,6 +80,10 @@ export class Game {
     this.uiManager.hideGameOver();
     this.player.makeInvincible(2000);
     this.world.clearNearbyObstacles(this.player.getPosition().z);
+
+    // Resume Logic
+    this.clock.getDelta(); // Discard the large delta accumulated while watching ad
+    this.player.makeInvincible(2000); // 2s Invincibility
   }
 
   update() {
@@ -100,10 +106,42 @@ export class Game {
       // Coin Collection
       const collectedCoinIndex = this.player.checkCoinCollection(coins);
       if (collectedCoinIndex !== -1) {
+        const coins = this.world.getCoins();
+        const collectedCoin = coins[collectedCoinIndex]; // Get reference before removing
+
+        if (collectedCoin) {
+          this.world.createCoinExplosion(collectedCoin.position.clone());
+        }
+
         this.soundManager.playCoin();
         this.coins++;
         this.uiManager.updateCoins(this.coins);
         this.world.removeCoin(collectedCoinIndex);
+      }
+
+      // PowerUp Collection
+      const powerups = this.world.getPowerUps();
+      const collectedPowerUpIndex = this.player.checkPowerUpCollection(powerups);
+      if (collectedPowerUpIndex !== -1) {
+        const p = powerups[collectedPowerUpIndex];
+        const type = p.userData.type;
+
+        this.soundManager.playCoin(); // Use coin sound or add specific powerup sound
+        this.player.activatePowerUp(type, 10); // 10 seconds duration
+
+        this.world.removePowerUp(collectedPowerUpIndex);
+      }
+
+      // Magnet Logic: Move nearby coins to player
+      if (this.player.magnetActive) {
+        const coins = this.world.getCoins();
+        const playerPos = this.player.getPosition();
+        coins.forEach(c => {
+          if (c.position.distanceTo(playerPos) < 15) {
+            const dir = playerPos.clone().sub(c.position).normalize();
+            c.position.add(dir.multiplyScalar(delta * 20)); // Fly fast to player
+          }
+        });
       }
     }
 
