@@ -1,5 +1,5 @@
 {
-    "appId": "com.endlessrunner.game",
+    "appId": "com.harshal.endlessrunner",
     "appName": "endless-runner",
     "webDir": "dist",
     "bundledWebRuntime": false

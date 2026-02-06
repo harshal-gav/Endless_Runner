@@ -17,3 +17,4 @@ android/build/
 # Secrets
 *.jks
 *.keystore
+android/keystore.properties
